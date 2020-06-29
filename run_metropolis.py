@@ -11,10 +11,10 @@ alphabet_string = params["alphabet_string"]
 '''
 
 
-def run_metropolis(cipher_text, transition_matrix):
+def run_metropolis(cipher_text):
     sigma = select_sigma(alphabet_string)
     decoded = decode(cipher_text, sigma, alphabet_string)
-    energy_sigma = get_energy(decoded, transition_matrix)
+    energy_sigma = get_energy(decoded)
 
     curr_text = cipher_text
     iteration = 0
@@ -23,7 +23,7 @@ def run_metropolis(cipher_text, transition_matrix):
 
         tau = swap_letters(sigma)
         decoded = decode(curr_text, tau, alphabet_string)
-        energy_tau = get_energy(decoded, transition_matrix)
+        energy_tau = get_energy(decoded)
         delta_energy = energy_tau - energy_sigma
 
         if delta_energy < 0:

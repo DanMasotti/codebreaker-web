@@ -4,7 +4,10 @@ import string
 import json
 import unidecode
 import numpy as np
+from itertools import product
+from collections import Counter
 from autocorrect import Speller
+import os
 
 spell = Speller(lang='en')
 
@@ -14,30 +17,31 @@ f.close()
 
 contractions = params["contractions"]
 alphabet_string = params["alphabet_string"]
+alphabet = list(alphabet_string)
 alphabet_sz = params["alphabet_sz"]
 n = params["n"]
 min_val = np.finfo(float).eps
 
 
 # this is the first step: picking a starting point
-def select_sigma(alphabet):
+def select_sigma(current_alphabet):
     # picks a random permutation of the alphabet
-    alphabet = list(alphabet)
-    random.shuffle(alphabet)
-    return ''.join(alphabet)
+    current_alphabet = list(current_alphabet)
+    random.shuffle(current_alphabet)
+    return ''.join(current_alphabet)
 
 
 # encrypts a message using the cipher
-def encode(plaintext, sigma, alphabet):
+def encode(plaintext, sigma, current_alphabet):
     # sigma: {a,b,c,...} -> {hfaiduzhi}
-    sigmaMap = dict(zip(alphabet, sigma))
+    sigmaMap = dict(zip(current_alphabet, sigma))
     return ''.join(sigmaMap.get(char.lower(), char) for char in plaintext)
 
 
 # decrypts the message
-def decode(cipher_text, sigma, alphabet):
+def decode(cipher_text, sigma, current_alphabet):
     # sigma^-1: {hfaiduzhi} -> {a,b,c,...}
-    sigmaMap = dict(zip(sigma, alphabet))
+    sigmaMap = dict(zip(sigma, current_alphabet))
     return ''.join(sigmaMap.get(char.lower(), char) for char in cipher_text)
 
 
@@ -62,7 +66,8 @@ def swap_letters(alphabet_to_swap):
 
 
 # using the gibbs measure as energy function to minimize
-def get_energy(decoded, transition_matrix):
+def get_energy(decoded):
+    transition_matrix = get_transition_matrix()
     # preallocate
     present_ngrams = np.empty(len(decoded), dtype=object)
     # make all the ngrams
@@ -98,6 +103,58 @@ def clean_text(dirty_text):
     text = ' '.join(text)
 
     return text
+
+
+def get_transition_matrix():
+    if os.path.exists("transition_matrix.json"):
+        f = open("transition_matrix.json")
+        transition_matrix = json.load(f)
+        f.close()
+    else:
+        with open("cleaned_corpus.txt") as f:
+            cleaned_corpus = f.read()
+        f.close()
+        transition_matrix = build_transition_matrix(cleaned_corpus)
+        with open("transition_matrix.json", "w") as write_file:
+            json.dump(transition_matrix, write_file)
+
+    return transition_matrix
+
+
+"""
+    Purpose: approximate the probability transitions in true English, that reason
+    I use cache instead of helper method is to give users the option to change
+    the size of n
+    In: large corpus for approximating true langauge, params
+    Out: transition matrix, stored on the user's cache
+"""
+
+
+def build_transition_matrix(corpus):
+    corpus_sz = len(corpus)
+    all_possible_ngrams = product(alphabet, repeat=n)
+    # preallocate ngram list
+    ngram_list = np.empty(corpus_sz, dtype=object)
+
+    # get all the ngrams that are in the mined text
+    for i in range(corpus_sz):
+        ngram_list[i] = corpus[i:i + n]
+
+    corpus_ngrams = set(ngram_list)
+    ngram2freq = Counter(ngram_list)
+    total_ngrams = sum(ngram2freq.values())
+
+    # transition matrix Q as dictionary: Q[ngram] = p_hat(ngram)
+    transition_matrix = {}
+
+    for perm in enumerate(all_possible_ngrams):
+        ngram = ''.join(list(perm[1]))
+
+        # if the ngram is not absolute garbage, store it in Q
+        if ngram in corpus_ngrams:
+            # empirical probability
+            transition_matrix[ngram] = (1 / total_ngrams) * (ngram2freq.get(ngram, min_val))
+    return transition_matrix
 
 
 # checks if the input text is alphanumeric
