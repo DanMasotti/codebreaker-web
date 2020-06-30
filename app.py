@@ -1,23 +1,17 @@
-from flask import Flask, redirect, render_template, request
-from flask_caching import Cache
+from flask import Flask, redirect, render_template, request, Response, url_for, stream_with_context
 from run_metropolis import *
-import json
-import numpy as np
-
-
-# in production, params and corpus would be stored on a db
-f = open("params.json")
-params = json.load(f)
-f.close()
-
-
-
 
 # for temporarily holding the built transition matrix in user's cache
-cache = Cache()
 app = Flask(__name__)
-app.config['CACHE_TYPE'] = 'simple'
-cache.init_app(app)
+
+
+def stream_template(template_name, **context):
+    app.update_template_context(context)
+    t = app.jinja_env.get_template(template_name)
+    rv = t.stream(context)
+    # uncomment if you don't need immediate reaction
+    rv.disable_buffering()
+    return rv
 
 
 @app.route("/", methods=["POST", "GET"])
@@ -27,19 +21,14 @@ def home():
         is_valid = validate_input_text(cipher_text)
         # validate the input text
         if is_valid:
-            decoded = run_metropolis(cipher_text)
-            decoded = spell_check(decoded)
-            return render_template("index.html", data=decoded)
+            # run metropolis
+            data = " "
+            return Response(stream_template("index.html", data=run_metropolis(cipher_text)))
         else:
             non_supported = "sorry, this cipher is not supported yet"
             return render_template("index.html", data=non_supported)
     else:
-        return render_template("index.html")
-
-
-
-
-
+        return render_template("index.html", data = " ")
 
 
 if __name__ == "__main__":

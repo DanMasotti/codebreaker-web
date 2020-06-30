@@ -21,9 +21,13 @@
 
 		<div style = "padding: 10px">
 			<label for="writeOut">be patient, your plain text will appear below: </label>
+			{% if data != " " %}
+			{% for i in range(10000): %}
 			<p id="writeOut" style="padding: 10px">
-			{{data}}
+				{{data.__next__()}}
 			</p>
+			{%endfor%}
+			{%endif%}
 		</div>
 
 		<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>

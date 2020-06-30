@@ -33,7 +33,7 @@ def run_metropolis(cipher_text):
             # if applying sigma to the current text retrieves the original ciphertext
             if encode(curr_text, sigma, alphabet_string) == cipher_text:
                 # we're done
-                break
+                return
         else:
             # reject: accept with prob exp(-beta*delta_V)
             p = np.exp(-beta * delta_energy)
@@ -44,4 +44,4 @@ def run_metropolis(cipher_text):
 
         iteration = iteration + 1
 
-    return decoded
+        yield decoded
