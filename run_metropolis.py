@@ -1,4 +1,5 @@
 from helpers import *
+import time
 
 max_iterations = params["max_iterations"]
 beta = params["beta"]
@@ -44,4 +45,4 @@ def run_metropolis(cipher_text):
 
         iteration = iteration + 1
 
-        yield decoded
+    return decoded

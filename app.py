@@ -23,12 +23,12 @@ def home():
         if is_valid:
             # run metropolis
             data = " "
-            return Response(stream_template("index.html", data=run_metropolis(cipher_text)))
+            return render_template("index.html", data=run_metropolis(cipher_text));
         else:
             non_supported = "sorry, this cipher is not supported yet"
             return render_template("index.html", data=non_supported)
     else:
-        return render_template("index.html", data = " ")
+        return render_template("index.html", data=" ")
 
 
 if __name__ == "__main__":
